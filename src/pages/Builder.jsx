@@ -131,28 +131,48 @@ export default function Builder() {
   };
 
   // ---- Export ----
-  const captureImage = async (type) => {
+  const captureImage = async (targetWidth = 3344) => {
     if (!previewRef.current) return;
     await document.fonts?.ready;
+    const images = Array.from(previewRef.current.querySelectorAll("img"));
+    await Promise.all(images.map((image) => image.complete ? Promise.resolve() : new Promise((resolve) => {
+      image.addEventListener("load", resolve, { once: true });
+      image.addEventListener("error", resolve, { once: true });
+    })));
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     const html2canvas = (await import("html2canvas")).default;
-    const canvas = await html2canvas(previewRef.current, { scale: 2, backgroundColor: resolveTheme(report.design.templateId, report.design.customColors).colors.bg, useCORS: true });
+    const sourceWidth = previewRef.current.scrollWidth || 1672;
+    const sourceHeight = previewRef.current.scrollHeight || 941;
+    const scale = Math.max(1, targetWidth / sourceWidth);
+    const canvas = await html2canvas(previewRef.current, {
+      scale,
+      width: sourceWidth,
+      height: sourceHeight,
+      windowWidth: sourceWidth,
+      windowHeight: sourceHeight,
+      backgroundColor: resolveTheme(report.design.templateId, report.design.customColors).colors.bg,
+      useCORS: true,
+      scrollX: 0,
+      scrollY: 0,
+    });
     return canvas;
   };
-  const exportImage = async (fmt) => {
+  const exportImage = async (fmt, resolution = "standard") => {
     try {
-      const canvas = await captureImage(fmt);
+      const is4K = resolution === "4k";
+      const canvas = await captureImage(is4K ? 3840 : 3344);
       const mime = fmt === "jpg" ? "image/jpeg" : "image/png";
       const url = canvas.toDataURL(mime, 0.95);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${safeFileName(report.info.reportTitle || "report")}.${fmt}`;
+      a.download = `${safeFileName(report.info.reportTitle || "report")}${is4K ? "-4k" : ""}.${fmt}`;
       a.click();
-      showToast(`Exported ${fmt.toUpperCase()}`);
+      showToast(`Exported ${fmt.toUpperCase()}${is4K ? " 4K" : ""}`);
     } catch (e) { showToast("Export failed", "error"); }
   };
   const exportPDF = async () => {
     try {
-      const canvas = await captureImage("png");
+      const canvas = await captureImage(3344);
       const { jsPDF } = await import("jspdf");
       const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
       const pw = pdf.internal.pageSize.getWidth();
@@ -260,7 +280,7 @@ export default function Builder() {
               previewReviewed={previewReviewed}
               enterFullscreen={openPreviewFullscreen}
               exitFullscreen={closePreviewFullscreen}
-              exportImage={(format) => requirePreviewReview(`exporting ${format.toUpperCase()}`) && exportImage(format)}
+              exportImage={(format, resolution = "standard") => requirePreviewReview(`exporting ${format.toUpperCase()}${resolution === "4k" ? " 4K" : ""}`) && exportImage(format, resolution)}
               exportPDF={() => requirePreviewReview("exporting PDF") && exportPDF()}
               printReport={() => requirePreviewReview("printing") && printReport()}
               saveReport={saveFromPreview}
@@ -427,6 +447,8 @@ function StepPreview({ report, previewRef, previewShellRef, isFullscreen, previe
         <button onClick={exportPDF} disabled={!previewReviewed} title={!previewReviewed ? "Review the report in full screen first" : "Export PDF"} className={actionClass}><FileDown size={14} /> PDF</button>
         <button onClick={() => exportImage("png")} disabled={!previewReviewed} title={!previewReviewed ? "Review the report in full screen first" : "Export PNG"} className={actionClass}><Image size={14} /> PNG</button>
         <button onClick={() => exportImage("jpg")} disabled={!previewReviewed} title={!previewReviewed ? "Review the report in full screen first" : "Export JPG"} className={actionClass}><Image size={14} /> JPG</button>
+        <button onClick={() => exportImage("png", "4k")} disabled={!previewReviewed} title={!previewReviewed ? "Review the report in full screen first" : "Export 4K PNG"} className={actionClass}><Image size={14} /> PNG 4K</button>
+        <button onClick={() => exportImage("jpg", "4k")} disabled={!previewReviewed} title={!previewReviewed ? "Review the report in full screen first" : "Export 4K JPG"} className={actionClass}><Image size={14} /> JPG 4K</button>
         <button onClick={printReport} disabled={!previewReviewed} title={!previewReviewed ? "Review the report in full screen first" : "Print report"} className={actionClass}><Printer size={14} /> Print</button>
         <button onClick={() => saveReport("Completed")} disabled={!previewReviewed} title={!previewReviewed ? "Review the report in full screen first" : "Save report"} className="text-sm px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 inline-flex items-center gap-1.5 disabled:cursor-not-allowed disabled:opacity-50"><Check size={14} /> Save Report</button>
       </div>
