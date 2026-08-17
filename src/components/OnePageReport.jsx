@@ -29,7 +29,7 @@ export default function OnePageReport({ report, calc, theme, forwardRef }) {
         {content.kpis.map((kpi, index) => <KpiCard key={`${kpi.label}-${index}`} {...kpi} c={c} radius={radius} shadow={theme.visual?.shadow} />)}
       </section>
       <section style={{ minHeight: 0, display: "grid", alignItems: "start", gridTemplateColumns: "minmax(0, 3.15fr) minmax(320px, 1fr)", gap: canvasGap }}>
-        <Panel title={content.tableTitle} c={c} radius={radius} style={{ minHeight: 0 }}><div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}><CompactTable content={content} c={c} />{content.insights}</div></Panel>
+        <Panel title={content.tableTitle} c={c} radius={radius} style={{ minHeight: 0, height: mainHeight }}><div style={{ display: "flex", flexDirection: "column", minHeight: 0, height: "100%" }}><CompactTable content={content} c={c} /><div style={{ flex: 1, minHeight: 0, display: "flex", alignItems: "center" }}>{content.insights}</div></div></Panel>
         <aside style={{ minHeight: 0, display: "grid", gridTemplateRows: "repeat(3, minmax(0, 1fr))", gap: canvasGap }}>
           {content.analytics.map((item, index) => <Panel key={`${item.title}-${index}`} title={item.title} c={c} radius={radius} compact>{item.node}</Panel>)}
         </aside>
