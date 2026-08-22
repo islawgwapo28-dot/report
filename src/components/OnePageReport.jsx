@@ -20,10 +20,12 @@ export default function OnePageReport({ report, calc, theme, forwardRef }) {
   const headerHeight = 92;
   const kpiHeight = 132;
   const footerHeight = 96;
-  const mainHeight = CANVAS_HEIGHT - (canvasPadding * 2) - (canvasGap * 3) - headerHeight - kpiHeight - footerHeight;
+  const showExecutiveSummary = report.design?.showExecutiveSummary !== false;
+  // Hiding the summary drops its band and its grid gap, and hands that height to the activity log.
+  const mainHeight = CANVAS_HEIGHT - (canvasPadding * 2) - (canvasGap * (showExecutiveSummary ? 3 : 2)) - headerHeight - kpiHeight - (showExecutiveSummary ? footerHeight : 0);
 
   return (
-    <article ref={forwardRef} className="report-sheet" data-template={theme.id} style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT, boxSizing: "border-box", overflow: "visible", display: "grid", gridTemplateRows: `${headerHeight}px ${kpiHeight}px ${mainHeight}px ${footerHeight}px`, gap: canvasGap, padding: canvasPadding, background: c.bg, color: c.text, fontFamily }}>
+    <article ref={forwardRef} className="report-sheet" data-template={theme.id} style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT, boxSizing: "border-box", overflow: "visible", display: "grid", gridTemplateRows: `${headerHeight}px ${kpiHeight}px ${mainHeight}px${showExecutiveSummary ? ` ${footerHeight}px` : ""}`, gap: canvasGap, padding: canvasPadding, background: c.bg, color: c.text, fontFamily }}>
       <ReportHeader report={report} c={c} radius={radius} />
       <section style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: canvasGap }}>
         {content.kpis.map((kpi, index) => <KpiCard key={`${kpi.label}-${index}`} {...kpi} c={c} radius={radius} shadow={theme.visual?.shadow} />)}
@@ -34,13 +36,13 @@ export default function OnePageReport({ report, calc, theme, forwardRef }) {
           {content.analytics.map((item, index) => <Panel key={`${item.title}-${index}`} title={item.title} c={c} radius={radius} compact>{item.node}</Panel>)}
         </aside>
       </section>
-      <footer style={{ display: "grid", gridTemplateColumns: "48px minmax(0, 1fr)", alignItems: "center", gap: 10, minHeight: footerHeight, padding: "10px 13px", borderRadius: radius, border: `1px solid ${c.border}`, background: c.cardBg, boxShadow: theme.visual?.shadow }}>
+      {showExecutiveSummary && <footer style={{ display: "grid", gridTemplateColumns: "48px minmax(0, 1fr)", alignItems: "center", gap: 10, minHeight: footerHeight, padding: "10px 13px", borderRadius: radius, border: `1px solid ${c.border}`, background: c.cardBg, boxShadow: theme.visual?.shadow }}>
         <div style={{ width: 36, height: 36, display: "grid", placeItems: "center", borderRadius: Math.max(4, radius - 2), background: c.cardBgAlt, color: c.warning }}><Lightbulb size={20} /></div>
         <div style={{ minWidth: 0 }}>
           <div style={{ color: c.accent, fontSize: 12, lineHeight: 1.2, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 6 }}>Executive Summary</div>
-          <div style={{ color: c.text, fontSize: 12.5, lineHeight: 1.45, overflowWrap: "anywhere" }}>{report.design?.showExecutiveSummary === false ? "Executive summary is hidden in report settings." : buildExecutiveSummary(report, calc)}</div>
+          <div style={{ color: c.text, fontSize: 12.5, lineHeight: 1.45, overflowWrap: "anywhere" }}>{buildExecutiveSummary(report, calc)}</div>
         </div>
-      </footer>
+      </footer>}
     </article>
   );
 }
