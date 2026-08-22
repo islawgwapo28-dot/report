@@ -135,3 +135,17 @@
     page-break-inside: avoid !important;
   }
 }
+
+/* html2canvas measures each font's baseline by placing a 1x1 probe <img> (its
+   SMALL_IMAGE data URI) next to a sample <span> and reading
+   `img.offsetTop - span.offsetTop`. That only works while the probe is an inline
+   box sitting on the text baseline. Tailwind's preflight applies
+   `img { display: block }` to every image, which drops the probe onto its own
+   line and inflates the measured baseline, so exported PNG/JPG/PDF text is
+   painted several pixels too low. It shows up worst on tightly boxed text such
+   as the report's status pills, whose label lands on the bottom border.
+   Keep the probe inline so exports match the on-screen preview. */
+img[src^="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP"] {
+  display: inline !important;
+  vertical-align: baseline !important;
+}
